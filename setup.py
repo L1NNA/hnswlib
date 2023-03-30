@@ -1,5 +1,6 @@
 import os
 import sys
+import platform
 
 import numpy as np
 import pybind11
@@ -7,7 +8,7 @@ import setuptools
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
-__version__ = '0.6.0'
+__version__ = '0.7.0'
 
 
 include_dirs = [
@@ -74,14 +75,20 @@ class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
     c_opts = {
         'msvc': ['/EHsc', '/openmp', '/O2'],
-        'unix': ['-O3', '-march=native'],  # , '-w'
+        #'unix': ['-O3', '-march=native'],  # , '-w'
+        'unix': ['-O3'],  # , '-w'
     }
+    if not os.environ.get("HNSWLIB_NO_NATIVE"):
+        c_opts['unix'].append('-march=native')
+
     link_opts = {
         'unix': [],
         'msvc': [],
     }
 
     if sys.platform == 'darwin':
+        if platform.machine() == 'arm64':
+            c_opts['unix'].remove('-march=native')
         c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
         link_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
     else:
